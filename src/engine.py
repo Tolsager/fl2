@@ -3,6 +3,8 @@ from torch import nn
 from typing import Optional
 
 
+from metrics import KNN
+
 def asymmetric_loss(p, z):
     z = z.detach()  # stop gradient
     p = nn.functional.normalize(p, dim=1)
@@ -41,3 +43,36 @@ class Trainer:
             aug1 = aug1.to(self.device)
             aug2 = aug2.to(self.device)
             model_outputs = self.model(aug1, aug2)
+
+    def validation(self) -> float:
+        train_features = []
+        train_labels = []
+        val_features = []
+        val_labels = []
+
+        with torch.no_grad():
+            for batch in self.train_dataloader:
+                _, _, img, label = batch
+                img = img.cuda()
+                train_features.append(self.model.backbone(img).cpu())
+                train_labels.append(label.cpu())
+
+            train_features = torch.concat(train_features, dim=0).numpy()
+            train_labels = torch.concat(train_labels, dim=0).numpy()
+
+            for batch in self.val_dataloader:
+                img, label = batch
+                img = img.cuda()
+                val_features.append(self.model.backbone(img).cpu())
+                val_labels.append(label.cpu())
+
+            val_features = torch.concat(val_features, dim=0).numpy()
+            val_labels = torch.concat(val_labels, dim=0).numpy()
+
+            knn = KNN(n_classes=10, top_k=[1], knn_k=200)
+            val_acc = knn.knn_acc(
+                val_features, val_labels, train_features, train_labels
+            )
+
+        return list(val_acc.values())[0]
+
