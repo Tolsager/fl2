@@ -3,9 +3,10 @@ import tqdm
 import torchmetrics
 from torch import nn
 from typing import Optional
+import math
 
 
-from metrics import KNN
+from src.metrics import KNN
 
 
 def asymmetric_loss(p, z):
@@ -20,6 +21,15 @@ def criterion(model_outputs: dict):
     loss1 = asymmetric_loss(model_outputs["p1"], model_outputs["z2"])
     loss2 = asymmetric_loss(model_outputs["p2"], model_outputs["z1"])
     return 0.5 * loss1 + 0.5 * loss2
+
+def adjust_learning_rate(optimizer, epoch, args):
+    """Decay the learning rate based on schedule"""
+    lr = args.learning_rate
+    # cosine lr schedule
+    lr *= 0.5 * (1. + math.cos(math.pi * epoch / args.epochs))
+
+    for param_group in optimizer.param_groups:
+        param_group['lr'] = lr
 
 
 class Trainer:
@@ -46,7 +56,7 @@ class Trainer:
         self.avg_train_loss = torchmetrics.MeanMetric()
 
     def train_epoch(self) -> None:
-        for aug1, aug2, _, _ in self.train_dataloader:
+        for aug1, aug2, _, _ in tqdm.tqdm(self.train_dataloader):
             aug1 = aug1.to(self.device)
             aug2 = aug2.to(self.device)
             model_outputs = self.model(aug1, aug2)
@@ -61,7 +71,9 @@ class Trainer:
             self.avg_train_loss.update(loss)
 
     def train(self) -> None:
+        self.model.train()
         for epoch in tqdm.trange(self.epochs):
+            adjust_learning_rate(self.optimizer, epoch=epoch, args={"learning_rate": self.learning_rate, "epochs": self.epochs})
             self.avg_train_loss.reset()
             self.train_epoch()
             val_acc = self.validation()
@@ -70,7 +82,9 @@ class Trainer:
             print(f"Average train loss: {avg_train_loss}")
             print(f"Validation accuracy: {val_acc}")
 
+
     def validation(self) -> float:
+        self.model.eval()
         train_features = []
         train_labels = []
         val_features = []

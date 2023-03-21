@@ -191,7 +191,7 @@ class SimSiam(nn.Module):
     def __init__(self, embedding_size: int = 2048):
         super(SimSiam, self).__init__()
         self.backbone = ResNet18()
-        self.projector = projection_MLP(embedding_size, embedding_size, 2)
+        self.projector = projection_MLP(512, embedding_size, 2)
 
         self.encoder = nn.Sequential(self.backbone, self.projector)
 
