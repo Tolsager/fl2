@@ -18,8 +18,8 @@ def train():
     val_ds = data.AugmentedDataset(val_ds, cifar10_val_transforms)
 
     # create dataloaders
-    train_dl = torch.utils.data.DataLoader(train_ds, batch_size=512)
-    val_dl = torch.utils.data.DataLoader(val_ds, batch_size=512)
+    train_dl = torch.utils.data.DataLoader(train_ds, batch_size=512, num_workers=8)
+    val_dl = torch.utils.data.DataLoader(val_ds, batch_size=512, num_workers=8)
 
     simsiam = model.SimSiam()
 

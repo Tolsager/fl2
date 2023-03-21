@@ -24,9 +24,9 @@ def criterion(model_outputs: dict):
 
 def adjust_learning_rate(optimizer, epoch, args):
     """Decay the learning rate based on schedule"""
-    lr = args.learning_rate
+    lr = args["learning_rate"]
     # cosine lr schedule
-    lr *= 0.5 * (1. + math.cos(math.pi * epoch / args.epochs))
+    lr *= 0.5 * (1. + math.cos(math.pi * epoch / args["epochs"]))
 
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
